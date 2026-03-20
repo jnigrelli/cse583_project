@@ -10,12 +10,10 @@ dependencies = [
     "certifi==2026.2.25",
     "charset-normalizer==3.4.6",
     "cloudpickle==3.1.2",
-    "compiler-gym==0.2.5",
     "deprecated==1.3.1",
     "docker==7.1.0",
     "fasteners==0.20",
     "grpcio==1.43.0",
-    "gym==0.21.0",
     "humanize==4.15.0",
     "idna==3.11",
     "loop-tool-py==0.0.7",
@@ -36,6 +34,3 @@ dependencies = [
     "wheel==0.38.1",
     "wrapt==2.1.2",
 ]
-
-[tool.uv]
-no-build-isolation-package = ["gym"]
