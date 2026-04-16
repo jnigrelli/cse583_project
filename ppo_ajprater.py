@@ -16,6 +16,10 @@ from stable_baselines3 import PPO, DQN
 from stable_baselines3.common.vec_env import DummyVecEnv
 from stable_baselines3.common.callbacks import BaseCallback
 
+# AJP : import custom energy reward and register it
+from energy_reward_ajprater import EnergyReward
+compiler_gym.envs.LlvmEnv.reward_space["EnergyRewardAJP"] = EnergyReward
+
 # Add near the top, after imports
 class ActionCastWrapper(gym.ActionWrapper):
     """Cast numpy.int64 actions to plain int for CompilerGym compatibility."""
@@ -47,7 +51,8 @@ def make_train_env():
     env = compiler_gym.make(
         "llvm-v0",
         observation_space="Autophase",
-        reward_space="IrInstructionCountOz",
+        # AJP: new reward space for training
+        reward_space="EnergyRewardAJP",
         benchmark=BENCHMARK,
     )
     # env = RuntimePointEstimateReward(
@@ -192,6 +197,7 @@ def main():
     print("=== Phase 1: Proxy training ===\n")
     model = train(total_timesteps=20_000, algo="ppo")
 
+    ''' TODO : Phase 2
     # Phase 2: fine-tune on runtime with the pretrained policy
     print("\n=== Phase 2: Runtime fine-tuning ===\n")
     runtime_env = DummyVecEnv([make_runtime_train_env])
@@ -200,14 +206,15 @@ def main():
     model.learning_rate = 1e-4      # smaller steps
     model.learn(total_timesteps=5_000, callback=EpisodeLogCallback())
     runtime_env.close()
+    '''
 
     print("\n=== Evaluating with proxy reward (IR instruction count) ===\n")
     evaluate(model, use_runtime_reward=False)
 
     # Uncomment below to also measure real wall-clock improvement.
     # Warning: each step runs the compiled binary 30 times — expect minutes.
-    print("\n=== Evaluating with runtime reward ===\n")
-    evaluate(model, use_runtime_reward=True)
+    # print("\n=== Evaluating with runtime reward ===\n")
+    # evaluate(model, use_runtime_reward=True)
 
 
 if __name__ == "__main__":
