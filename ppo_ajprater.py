@@ -7,6 +7,8 @@ Install:
 CompilerGym pins gym~=0.21.  SB3 >=2.0 requires gymnasium, so we
 must stay on the 1.x line of SB3 to avoid breakage.
 """
+import os
+os.environ["COMPILER_GYM_TRANSIENT_CACHE"] = "/tmp/ajprater_scratch_compiler"
 
 import gym
 import numpy as np
@@ -16,9 +18,8 @@ from stable_baselines3 import PPO, DQN
 from stable_baselines3.common.vec_env import DummyVecEnv
 from stable_baselines3.common.callbacks import BaseCallback
 
-# AJP : import custom energy reward and register it
+# AJP : import custom energy reward 
 from energy_reward_ajprater import EnergyReward
-compiler_gym.envs.LlvmEnv.reward_space["EnergyRewardAJP"] = EnergyReward
 
 # Add near the top, after imports
 class ActionCastWrapper(gym.ActionWrapper):
@@ -52,9 +53,10 @@ def make_train_env():
         "llvm-v0",
         observation_space="Autophase",
         # AJP: new reward space for training
-        reward_space="EnergyRewardAJP",
         benchmark=BENCHMARK,
     )
+    env.reward.add_space(EnergyReward())
+    env.reward_space = "energy"
     # env = RuntimePointEstimateReward(
     #     env, runtime_count=10, warmup_count=3  # fewer runs to speed up training
     # )
@@ -195,7 +197,7 @@ def evaluate(model, use_runtime_reward: bool = False, n_eval_episodes: int = 3):
 def main():
     print(f"=== Training PPO on {BENCHMARK} ===\n")
     print("=== Phase 1: Proxy training ===\n")
-    model = train(total_timesteps=20_000, algo="ppo")
+    model = train(total_timesteps=100_000, algo="ppo")
 
     ''' TODO : Phase 2
     # Phase 2: fine-tune on runtime with the pretrained policy
