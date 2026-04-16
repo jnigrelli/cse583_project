@@ -12,8 +12,7 @@ class EnergyReward(Reward):
             default_value=0.0,
             min=None,
             max=None,
-            # idk these opts they prob fine like this
-            default_negates_returns=True,
+            default_negates_returns=False,
             deterministic=True,
             platform_dependent=False,
         )
@@ -23,47 +22,37 @@ class EnergyReward(Reward):
         self.w_branch = 44.6
         self.w_mem = 440.3
 
-        self.best_energy = None
         self.prev_energy= None
+    
+    def compute_energy(self,inst_counts):
+        num_ints = inst_counts.get("AddCount", 0) + inst_counts.get("SubCount", 0) + inst_counts.get("MulCount", 0)
+        num_floats = inst_counts.get("FAddCount", 0) + inst_counts.get("FSubCount", 0) + inst_counts.get("FMulCount", 0)
+        num_mems = inst_counts.get("LoadCount", 0) + inst_counts.get("StoreCount", 0)
+        num_branches = inst_counts.get("BrCount", 0)
 
-    def reset(self, benchmark, observation_view) -> None:
-        super().reset(benchmark, observation_view)
-        self.prev_energy = None
-        self.best_energy = None
+        return (
+            num_ints * self.w_int
+            + num_floats * self.w_float
+            + num_mems * self.w_mem
+            + num_branches * self.w_branch
+        )
+
+    def reset(self, benchmark, observation_view):
+        inst_counts = observation_view["InstCountDict"]
+        self.prev_energy = self.compute_energy(inst_counts)
 
     def update(
         self,
-        # idk these ops as well in runtime_reward they are "hints" so seems unimportant
         actions,
         observations,
         observation_view
     ):
         # observation_space is "InstCountDict", ref compilergym.com/llvm/index.html it has a list of insts
-        inst_counts = observation_view["InstCountDict"]
+        inst_counts = observations[0]
 
-        num_ints = inst_counts.get("addCount", 0) + inst_counts.get("subCount", 0) + inst_counts.get("mulCount", 0)
-        num_floats = inst_counts.get("faddCount", 0) + inst_counts.get("fsubCount", 0) + inst_counts.get("fmulCount", 0)
-        num_mems = inst_counts.get("loadCount", 0) + inst_counts.get("storeCount", 0)
-        num_branches = inst_counts.get("brCount", 0)
-
-        raw_energy = (num_ints * self.w_int) + (num_floats * self.w_float) + (num_mems * self.w_mem) + (num_branches * self.w_branch)
-        energy_func = raw_energy / 1000.0
-
-        if self.best_energy is None:
-            self.best_energy = energy_func
-            self.prev_energy = energy_func
-            return 0.0
-
-        # punish no action
-        if energy_func == self.prev_energy:
-            return -0.05
+        energy = self.compute_energy(inst_counts)
         
-        self.prev_energy = energy_func
+        reward = 100*(self.prev_energy - energy) / (self.prev_energy + 1e-8)
+        self.prev_energy = energy
         
-        if energy_func < self.best_energy:
-            reward = self.best_energy - energy_func
-            self.best_energy = energy_func
-            return reward
-
-        return -0.01
-
+        return reward
