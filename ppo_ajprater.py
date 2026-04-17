@@ -7,6 +7,7 @@ Install:
 CompilerGym pins gym~=0.21.  SB3 >=2.0 requires gymnasium, so we
 must stay on the 1.x line of SB3 to avoid breakage.
 """
+# CAEN was yelling at me for using the common linux cache
 import os
 os.environ["COMPILER_GYM_TRANSIENT_CACHE"] = "/tmp/ajprater_scratch_compiler"
 
@@ -20,6 +21,7 @@ from stable_baselines3.common.callbacks import BaseCallback
 
 # AJP : import custom energy reward 
 from energy_reward_ajprater import EnergyReward
+from perf_reward import PerfReward
 
 # Add near the top, after imports
 class ActionCastWrapper(gym.ActionWrapper):
@@ -52,7 +54,6 @@ def make_train_env():
     env = compiler_gym.make(
         "llvm-v0",
         observation_space="Autophase",
-        # AJP: new reward space for training
         benchmark=BENCHMARK,
     )
     env.reward.add_space(EnergyReward())
@@ -67,12 +68,10 @@ def make_runtime_train_env():
     env = compiler_gym.make(
         "llvm-v0",
         observation_space="Autophase",
-        reward_space="IrInstructionCountOz",
         benchmark=BENCHMARK,
     )
-    env = RuntimePointEstimateReward(
-        env, runtime_count=30, warmup_count=5  # more runs = less noise
-    )
+    env.reward.add_space(PerfReward())
+    env.reward_space="perf"
     return ActionCastWrapper(env)
 
 def make_eval_env(runtime_count: int = 30):
@@ -117,7 +116,8 @@ class EpisodeLogCallback(BaseCallback):
 # ---------------------------------------------------------------------------
 
 def train(total_timesteps: int = 20_000, algo: str = "ppo"):
-    vec_env = DummyVecEnv([make_train_env])
+    # TEMP TESTING CHANGE
+    vec_env = DummyVecEnv([make_runtime_train_env])
 
     common_kwargs = dict(
         policy="MlpPolicy",
@@ -197,7 +197,7 @@ def evaluate(model, use_runtime_reward: bool = False, n_eval_episodes: int = 3):
 def main():
     print(f"=== Training PPO on {BENCHMARK} ===\n")
     print("=== Phase 1: Proxy training ===\n")
-    model = train(total_timesteps=100_000, algo="ppo")
+    model = train(total_timesteps=10_000, algo="ppo")
 
     ''' TODO : Phase 2
     # Phase 2: fine-tune on runtime with the pretrained policy
