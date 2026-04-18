@@ -33,22 +33,22 @@ class PerfReward(Reward):
 
             # NOTE: Some benchmarks might need -lm
             c_cmd = ["clang", "-x", "ir", "-", "-o", c_path]
-            print(f"[1] Compiling with command: {' '.join(c_cmd)}")
+            # print(f"[1] Compiling with command: {' '.join(c_cmd)}")
             try:
                 subprocess.run(c_cmd,input=ir_string,text=True,check=True,capture_output=True)
-                print("[2] Compiled successful")
+                # print("[2] Compiled successful")
             except subprocess.CalledProcessError as e:
-                print("COMPILATION FAILED")
-                print(f"{e.stderr}")
+                # print("COMPILATION FAILED")
+                # print(f"{e.stderr}")
                 return -50.0
 
-            print("[3] Runnning Program")
+            # print("[3] Runnning Program")
             run = subprocess.run([c_path, finfo_path], capture_output=True, text=True, cwd=tmpdir)
             if run.returncode == 0:
-                print("[4] RUN SUCCESS")
+                # print("[4] RUN SUCCESS")
                 return 1.0
             else:
-                print("ERROR IN RUNTIME")
+                # print("ERROR IN RUNTIME")
                 if run.stderr:
                     print(f"{run.stderr}")
                 if run.stdout:
