@@ -33,7 +33,6 @@ TEST_BENCHMARK    = "benchmark://cbench-v1/ghostscript"
 MAX_EPISODE_STEPS = 100
 MODEL_SAVE_PATH   = "ppo_energy_sha"   # SB3 appends .zip automatically
 
-
 # ---------------------------------------------------------------------------
 # Wrappers
 # ---------------------------------------------------------------------------
