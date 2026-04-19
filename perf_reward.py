@@ -1,6 +1,7 @@
 import subprocess
 import tempfile
 import os
+import logging
 from compiler_gym.spaces import Reward
 from typing import List
 import compiler_gym
@@ -31,23 +32,24 @@ class PerfReward(Reward):
             # cbench needs this info file thats just "num_runs"
             finfo_path = os.path.join(tmpdir, "_finfo_dataset")
             with open(finfo_path, "w") as f:
-                f.write("1\n")
+                f.write("2000\n")
 
             c_cmd = ["clang", bc_file, "-o", c_path, "-lm"]
-            #print(f"[1] Compiling with command: {' '.join(c_cmd)}")
+            logging.debug(f"[1] Compiling with command: {' '.join(c_cmd)}")
             try:
                 subprocess.run(c_cmd,check=True,capture_output=True)
-                #print("[2] Compiled successful")
+                logging.debug("[2] Compiled successful")
             except subprocess.CalledProcessError as e:
-                print("COMPILATION FAILED")
-                print(f"{e.stderr}")
+                logging.warning("COMPILATION FAILED")
+                logging.warning(f"{e.stderr}")
                 return 1000000.0
 
-            #print("[3] Runnning Program")
+            logging.debug("[3] Runnning Program")
             total_uj, wall_s, returncode = self.measure_energy.measure([c_path,finfo_path], cwd=tmpdir)
             if returncode != 0:
-                print("ERROR IN RUNTIME")
+                logging.warning("ERROR IN RUNTIME")
                 return 1000000.0
+            logging.debug(f"UJ: {total_uj}, WALL_S: {wall_s}")
             return total_uj
 
     def reset(self, benchmark, observation_view):

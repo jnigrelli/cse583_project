@@ -15,6 +15,7 @@ from common import *
 import gym
 import numpy as np
 import compiler_gym
+import logging
 from stable_baselines3 import PPO, DQN
 from stable_baselines3.common.vec_env import DummyVecEnv
 from stable_baselines3.common.callbacks import BaseCallback
@@ -32,7 +33,7 @@ class EpisodeLogCallback(BaseCallback):
         self._episode_reward += self.locals["rewards"][0]
         self._episode_steps  += 1
         if self.locals["dones"][0]:
-            print(
+            logging.info(
                 f"[train]  episode finished  |  "
                 f"steps={self._episode_steps}  "
                 f"reward={self._episode_reward:.4f}"
@@ -43,7 +44,7 @@ class EpisodeLogCallback(BaseCallback):
 
 # This func looks like its more a "constructor" that only needs to be called once
 def train(total_timesteps: int = 20_000, algo: str = "ppo"):
-    vec_env = DummyVecEnv([make_energy_env])
+    vec_env = DummyVecEnv([make_perf_env])
 
     common_kwargs = dict(
         policy="MlpPolicy",

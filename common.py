@@ -2,6 +2,7 @@ import gym
 import compiler_gym
 import time
 import subprocess
+import logging
 from pathlib import Path
 from energy_reward_ajprater import EnergyReward
 from perf_reward import PerfReward
@@ -18,6 +19,11 @@ class ActionCastWrapper(gym.ActionWrapper):
     """Cast numpy.int64 actions to plain int for CompilerGym compatibility."""
     def action(self, action):
         return int(action)
+
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(levelname)s: %(message)s"
+)
 
 def make_energy_env(benchmark=BENCHMARK):
     env = compiler_gym.make(
@@ -55,7 +61,7 @@ class power_meas:
         if self.mode == "RAPL":
             self.rapl_domains = self.get_rapl_domains()
             if not self.rapl_domains:
-                print("ERROR: NO RAPL DOMAINS")
+                logging.error("ERROR: NO RAPL DOMAINS")
     
     def measure(self, cmd, cwd=None):
         if self.mode == "RAPL":
@@ -77,7 +83,7 @@ class power_meas:
             try:
                 readings[name] = int(path.read_text().strip())
             except (PermissionError, FileNotFoundError, ValueError) as e:
-                print(f"[warn] could not read {path}: {e}")
+                logging.warning(f"[warn] could not read {path}: {e}")
         return readings
 
     def measure_rapl(self, cmd, cwd=None):
