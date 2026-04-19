@@ -7,7 +7,7 @@ from energy_reward_ajprater import EnergyReward
 from perf_reward import PerfReward
 
 BENCHMARK         = "benchmark://cbench-v1/sha"
-TEST_BENCHMARK    = "benchmark://cbench-v1/ghostscript"
+TEST_BENCHMARK    = "benchmark://cbench-v1/qsort"
 MAX_EPISODE_STEPS = 100
 MODEL_SAVE_PATH   = "ppo_energy_sha"
 MEASURE_RAPL      = True
@@ -52,7 +52,7 @@ def make_eval_env(runtime_count: int = 30):
 class power_meas:
     def __init__(self):
         self.mode = "RAPL" if MEASURE_RAPL else "PERF"
-        if self.mode = "RAPL":
+        if self.mode == "RAPL":
             self.rapl_domains = self.get_rapl_domains()
             if not self.rapl_domains:
                 print("ERROR: NO RAPL DOMAINS")
@@ -84,7 +84,7 @@ class power_meas:
         before = self.read_rapl()
         t0 = time.monotonic()
         try:
-            subproccess.run(cmd, capture_output=True, timeout=120, cwd=cwd)
+            result = subprocess.run(cmd, capture_output=True, timeout=120, cwd=cwd)
             returncode = result.returncode
         except subprocess.TimeoutExpired:
             returncode = -1
@@ -94,13 +94,13 @@ class power_meas:
         t1 = time.monotonic()
         after = self.read_rapl()
 
-        uj = 0
+        total_uj = 0
         for name in before:
             if name in after:
                 diff = after[name] - before[name]
                 if diff < 0:
                     try:
-                        max_path = self.rapl_domain[name].parent / "max_energy_range_uj"
+                        max_path = self.rapl_domains[name].parent / "max_energy_range_uj"
                         diff += int(max_path.read_text().strip())
                     except Exception:
                         diff = 0

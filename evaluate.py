@@ -75,14 +75,9 @@ def benchmark_energy(
     warmup_runs: int = 3,
 ):
     """Compile benchmark at -O0, -O3, -Oz, RL, and RL+O3, then measure RAPL energy."""
-
-    domains = get_rapl_domains()
-    if not domains:
-        print("[energy bench] ERROR: No RAPL domains found — check /sys/class/powercap/ permissions.")
-        return
-
     print(f"\n=== RAPL Energy Benchmark  [{benchmark_uri}] ===\n")
-    print(f"  RAPL domains : {list(domains.keys())}")
+    measure_energy = power_meas()
+    print(f"  RAPL domains : {list(measure_energy.rapl_domains.keys())}")
     print(f"  Runs         : {n_runs}  (warmup: {warmup_runs})\n")
 
     extra_link_flags = ["-lm"]
@@ -127,11 +122,21 @@ def benchmark_energy(
         return bin_path
 
     # --- run binary and measure ---
-    measure_energy = power_meas()
     def run_binary_with_energy(bin_path, n, warmup):
+        # setup for _finfo_dataset
+        bin_dir = os.path.dirname(bin_path)
+        finfo_path = os.path.join(bin_dir, "_finfo_dataset")
+        with open(finfo_path, "w") as f:
+            f.write("2000\n")
+
         energy_readings, time_readings = [], []
         for i in range(warmup + n):
-            total_uj, wall_s, _ = measure_energy.measure([bin_path])
+            total_uj, wall_s, returncode = measure_energy.measure([bin_path, finfo_path], cwd=bin_dir)
+
+            if returncode != 0:
+                print("RUNTIME ERROR")
+                continue
+
             if i >= warmup:
                 energy_readings.append(total_uj)
                 time_readings.append(wall_s)
