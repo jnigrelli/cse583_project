@@ -28,7 +28,7 @@ import compiler_gym
 from common import *
 from stable_baselines3 import PPO
 
-from energy_reward_ajprater import EnergyReward
+from energy_reward import EnergyReward
 
 # ---------------------------------------------------------------------------
 # 1.  Policy rollout evaluation (energy reward)

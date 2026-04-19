@@ -4,7 +4,7 @@ import time
 import subprocess
 import logging
 from pathlib import Path
-from energy_reward_ajprater import EnergyReward
+from energy_reward import EnergyReward
 from perf_reward import PerfReward
 
 BENCHMARK         = "benchmark://cbench-v1/sha"
