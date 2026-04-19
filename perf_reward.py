@@ -35,7 +35,7 @@ class PerfReward(Reward):
             c_cmd = ["clang", bc_file, "-o", c_path]
             # print(f"[1] Compiling with command: {' '.join(c_cmd)}")
             try:
-                subprocess.run(c_cmd,input=ir_string,text=True,check=True,capture_output=True)
+                subprocess.run(c_cmd,check=True,capture_output=True)
                 # print("[2] Compiled successful")
             except subprocess.CalledProcessError as e:
                 print("COMPILATION FAILED")
