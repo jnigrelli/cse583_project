@@ -1,6 +1,7 @@
 import subprocess
 import tempfile
 import os
+import logging
 from compiler_gym.spaces import Reward
 from typing import List
 import compiler_gym
@@ -11,7 +12,7 @@ class PerfReward(Reward):
     def __init__(self):
         super().__init__(
             name="perf",
-            observation_spaces=["Ir"],
+            observation_spaces=["BitcodeFile"],
             default_value=0.0,
             min=None,
             max=None,
@@ -21,46 +22,42 @@ class PerfReward(Reward):
         )
         self.prev_energy = None
         self.start_energy = None
+        from common import power_meas
+        self.measure_energy = power_meas()
 
-    def run_perf(self, ir_string):
+    def run_perf(self, bc_file):
         with tempfile.TemporaryDirectory() as tmpdir:
             c_path = os.path.join(tmpdir, "c.out")
             
             # cbench needs this info file thats just "num_runs"
             finfo_path = os.path.join(tmpdir, "_finfo_dataset")
             with open(finfo_path, "w") as f:
-                f.write("1\n")
+                f.write("2000\n")
 
-            # NOTE: Some benchmarks might need -lm
-            c_cmd = ["clang", "-x", "ir", "-", "-o", c_path]
-            print(f"[1] Compiling with command: {' '.join(c_cmd)}")
+            c_cmd = ["clang", bc_file, "-o", c_path, "-lm"]
+            logging.debug(f"[1] Compiling with command: {' '.join(c_cmd)}")
             try:
-                subprocess.run(c_cmd,input=ir_string,text=True,check=True,capture_output=True)
-                print("[2] Compiled successful")
+                subprocess.run(c_cmd,check=True,capture_output=True)
+                logging.debug("[2] Compiled successful")
             except subprocess.CalledProcessError as e:
-                print("COMPILATION FAILED")
-                print(f"{e.stderr}")
-                return -50.0
+                logging.warning("COMPILATION FAILED")
+                logging.warning(f"{e.stderr}")
+                return 1000000.0
 
-            print("[3] Runnning Program")
-            run = subprocess.run([c_path, finfo_path], capture_output=True, text=True, cwd=tmpdir)
-            if run.returncode == 0:
-                print("[4] RUN SUCCESS")
-                return 1.0
-            else:
-                print("ERROR IN RUNTIME")
-                if run.stderr:
-                    print(f"{run.stderr}")
-                if run.stdout:
-                    print(f"{run.stdout}")
-                return -1.0
+            logging.debug("[3] Runnning Program")
+            total_uj, wall_s, returncode = self.measure_energy.measure([c_path,finfo_path], cwd=tmpdir)
+            if returncode != 0:
+                logging.warning("ERROR IN RUNTIME")
+                return 1000000.0
+            logging.debug(f"UJ: {total_uj}, WALL_S: {wall_s}")
+            return total_uj
 
     def reset(self, benchmark, observation_view):
         if not observation_view["IsRunnable"]:
             raise BenchmarkInitError(f"Benchmark is not runnable: {benchmark}")
 
         if self.start_energy is None:
-            self.start_energy = self.run_perf(observation_view["Ir"])
+            self.start_energy = self.run_perf(observation_view["BitcodeFile"])
 
         self.prev_energy = self.start_energy
 
@@ -70,10 +67,10 @@ class PerfReward(Reward):
         observations,
         observation_view
     ):
-        c_IR = observations[0]
+        bc = observations[0]
 
         # FUTURE NOTE: run_perf gonna have to do a lot of heavy lifting here...
-        energy = self.run_perf(c_IR)
+        energy = self.run_perf(bc)
         
         reward = 100*(self.prev_energy - energy) / (self.prev_energy + 1e-8)
         self.prev_energy = energy

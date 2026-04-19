@@ -13,7 +13,7 @@ import numpy as np
 import compiler_gym
 from compiler_gym.wrappers import RuntimePointEstimateReward
 from stable_baselines3 import PPO, DQN
-from stable_baselines3.common.vec_env import DummyVecEnv
+from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize
 from stable_baselines3.common.callbacks import BaseCallback
 
 # Add near the top, after imports
@@ -109,8 +109,13 @@ class EpisodeLogCallback(BaseCallback):
 # 3.  Train
 # ---------------------------------------------------------------------------
 
-def train(total_timesteps: int = 20_000, algo: str = "ppo"):
-    vec_env = DummyVecEnv([make_train_env])
+def train(total_timesteps: int = 20_000, use_proxy: bool = True, algo: str = "ppo"):
+    if not use_proxy:
+        vec_env = DummyVecEnv([make_runtime_train_env])
+    else:
+        vec_env = DummyVecEnv([make_train_env])
+
+    vec_env = VecNormalize(vec_env, norm_obs=True, norm_reward=True, gamma=1.0)
 
     common_kwargs = dict(
         policy="MlpPolicy",
@@ -190,16 +195,16 @@ def evaluate(model, use_runtime_reward: bool = False, n_eval_episodes: int = 3):
 def main():
     print(f"=== Training PPO on {BENCHMARK} ===\n")
     print("=== Phase 1: Proxy training ===\n")
-    model = train(total_timesteps=20_000, algo="ppo")
+    model = train(total_timesteps=20_000, use_proxy=False, algo="ppo")
 
-    # Phase 2: fine-tune on runtime with the pretrained policy
-    print("\n=== Phase 2: Runtime fine-tuning ===\n")
-    runtime_env = DummyVecEnv([make_runtime_train_env])
-    model.set_env(runtime_env)
-    model.ent_coef = 0.001          # less exploration — refine, don't restart
-    model.learning_rate = 1e-4      # smaller steps
-    model.learn(total_timesteps=5_000, callback=EpisodeLogCallback())
-    runtime_env.close()
+    # # Phase 2: fine-tune on runtime with the pretrained policy
+    # print("\n=== Phase 2: Runtime fine-tuning ===\n")
+    # runtime_env = DummyVecEnv([make_runtime_train_env])
+    # model.set_env(runtime_env)
+    # model.ent_coef = 0.001          # less exploration — refine, don't restart
+    # model.learning_rate = 1e-4      # smaller steps
+    # model.learn(total_timesteps=5_000, callback=EpisodeLogCallback())
+    # runtime_env.close()
 
     print("\n=== Evaluating with proxy reward (IR instruction count) ===\n")
     evaluate(model, use_runtime_reward=False)
