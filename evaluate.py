@@ -25,59 +25,10 @@ from pathlib import Path
 import gym
 import numpy as np
 import compiler_gym
-from compiler_gym.wrappers import RuntimePointEstimateReward
+import common
 from stable_baselines3 import PPO
 
 from energy_reward_ajprater import EnergyReward
-
-# ---------------------------------------------------------------------------
-# Config — keep in sync with train_ppo.py
-# ---------------------------------------------------------------------------
-
-BENCHMARK         = "benchmark://cbench-v1/sha"
-TEST_BENCHMARK    = "benchmark://cbench-v1/ghostscript"
-MAX_EPISODE_STEPS = 100
-MODEL_SAVE_PATH   = "ppo_energy_sha"   # default; override with --model
-
-POWERCAP_DIR = Path("/sys/class/powercap/")
-
-
-# ---------------------------------------------------------------------------
-# Shared wrapper
-# ---------------------------------------------------------------------------
-
-class ActionCastWrapper(gym.ActionWrapper):
-    def action(self, action):
-        return int(action)
-
-
-# ---------------------------------------------------------------------------
-# Environment factories
-# ---------------------------------------------------------------------------
-
-def make_energy_env(benchmark=BENCHMARK):
-    env = compiler_gym.make(
-        "llvm-v0",
-        observation_space="Autophase",
-        benchmark=benchmark,
-    )
-    env.reward.add_space(EnergyReward())
-    env.reward_space = "energy"
-    return ActionCastWrapper(env)
-
-
-def make_eval_env(benchmark=BENCHMARK, runtime_count: int = 30):
-    env = compiler_gym.make(
-        "llvm-v0",
-        observation_space="Autophase",
-        reward_space="IrInstructionCountOz",
-        benchmark=benchmark,
-    )
-    env = RuntimePointEstimateReward(
-        env, runtime_count=runtime_count, warmup_count=5
-    )
-    return ActionCastWrapper(env)
-
 
 # ---------------------------------------------------------------------------
 # 1.  Policy rollout evaluation (energy reward)
