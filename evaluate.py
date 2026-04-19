@@ -25,7 +25,7 @@ from pathlib import Path
 import gym
 import numpy as np
 import compiler_gym
-import common
+from common import *
 from stable_baselines3 import PPO
 
 from energy_reward_ajprater import EnergyReward
@@ -67,47 +67,6 @@ def evaluate_policy(model, benchmark=BENCHMARK, n_eval_episodes: int = 3):
 # ---------------------------------------------------------------------------
 # 2.  RAPL energy benchmark
 # ---------------------------------------------------------------------------
-
-def get_rapl_domains():
-    domains = {}
-    for p in POWERCAP_DIR.glob("*/energy_uj"):
-        name = p.parent.name
-        if name.count(":") == 1:
-            domains[name] = p
-    return domains
-
-
-def read_rapl_energy_uj(domains):
-    readings = {}
-    for name, path in domains.items():
-        try:
-            readings[name] = int(path.read_text().strip())
-        except (PermissionError, FileNotFoundError, ValueError) as e:
-            print(f"  [warn] Could not read {path}: {e}")
-    return readings
-
-
-def measure_energy_uj(func, domains):
-    before = read_rapl_energy_uj(domains)
-    t0     = time.monotonic()
-    result = func()
-    t1     = time.monotonic()
-    after  = read_rapl_energy_uj(domains)
-
-    delta = {}
-    for name in before:
-        if name in after:
-            diff = after[name] - before[name]
-            if diff < 0:
-                max_path = domains[name].parent / "max_energy_range_uj"
-                try:
-                    diff += int(max_path.read_text().strip())
-                except Exception:
-                    diff = 0
-            delta[name] = diff
-
-    return result, delta, t1 - t0
-
 
 def benchmark_energy(
     model,
@@ -168,13 +127,11 @@ def benchmark_energy(
         return bin_path
 
     # --- run binary and measure ---
+    measure_energy = power_meas()
     def run_binary_with_energy(bin_path, n, warmup):
         energy_readings, time_readings = [], []
         for i in range(warmup + n):
-            def execute():
-                return subprocess.run([bin_path], capture_output=True, timeout=120)
-            _, energy_uj, wall_s = measure_energy_uj(execute, domains)
-            total_uj = sum(energy_uj.values())
+            total_uj, wall_s, _ = measure_energy.measure([bin_path])
             if i >= warmup:
                 energy_readings.append(total_uj)
                 time_readings.append(wall_s)
