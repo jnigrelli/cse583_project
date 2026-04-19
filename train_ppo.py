@@ -87,8 +87,8 @@ def train(total_timesteps: int = 20_000, algo: str = "ppo"):
 def main():
     print(f"=== Training PPO on {BENCHMARK} ===\n")
     print("=== Phase 1: Energy reward training ===\n")
-    model = train(total_timesteps=100_000, algo="ppo")
-
+    #model = train(total_timesteps=100_000, algo="ppo")
+    model = train(total_timesteps=5000, algo="ppo")
     model.save(MODEL_SAVE_PATH)
     print(f"\nModel saved to {MODEL_SAVE_PATH}.zip")
 

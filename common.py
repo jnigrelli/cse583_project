@@ -21,7 +21,7 @@ class ActionCastWrapper(gym.ActionWrapper):
         return int(action)
 
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.INFO,
     format="%(levelname)s: %(message)s"
 )
 
