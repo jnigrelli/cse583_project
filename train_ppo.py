@@ -44,7 +44,7 @@ class EpisodeLogCallback(BaseCallback):
 
 # This func looks like its more a "constructor" that only needs to be called once
 def train(total_timesteps: int = 20_000, algo: str = "ppo"):
-    vec_env = DummyVecEnv([make_perf_env])
+    vec_env = DummyVecEnv([make_energy_env])
 
     common_kwargs = dict(
         policy="MlpPolicy",
@@ -87,12 +87,10 @@ def train(total_timesteps: int = 20_000, algo: str = "ppo"):
 def main():
     print(f"=== Training PPO on {BENCHMARK} ===\n")
     print("=== Phase 1: Energy reward training ===\n")
-    #model = train(total_timesteps=100_000, algo="ppo")
-    model = train(total_timesteps=5000, algo="ppo")
-    model.save(MODEL_SAVE_PATH)
-    print(f"\nModel saved to {MODEL_SAVE_PATH}.zip")
+    model = train(total_timesteps=50_000, algo="ppo")
+    #model.save(MODEL_SAVE_PATH)
+    #print(f"\nModel saved to {MODEL_SAVE_PATH}.zip")
 
-    ''' TODO : Phase 2
     print("\n=== Phase 2: Perf fine-tuning ===\n")
     perf_env = DummyVecEnv([make_perf_env])
     model.set_env(perf_env)
@@ -102,7 +100,6 @@ def main():
     perf_env.close()
     model.save(MODEL_SAVE_PATH)
     print(f"Fine-tuned model saved to {MODEL_SAVE_PATH}.zip")
-    '''
 
 
 if __name__ == "__main__":
