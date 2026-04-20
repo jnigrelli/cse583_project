@@ -77,7 +77,8 @@ def benchmark_energy(
     """Compile benchmark at -O0, -O3, -Oz, RL, and RL+O3, then measure RAPL energy."""
     print(f"\n=== RAPL Energy Benchmark  [{benchmark_uri}] ===\n")
     measure_energy = power_meas()
-    print(f"  RAPL domains : {list(measure_energy.rapl_domains.keys())}")
+    if MEASURE_RAPL:
+        print(f"  RAPL domains : {list(measure_energy.rapl_domains.keys())}")
     print(f"  Runs         : {n_runs}  (warmup: {warmup_runs})\n")
 
     extra_link_flags = ["-lm"]
@@ -127,7 +128,7 @@ def benchmark_energy(
         bin_dir = os.path.dirname(bin_path)
         finfo_path = os.path.join(bin_dir, "_finfo_dataset")
         with open(finfo_path, "w") as f:
-            f.write("2000\n")
+            f.write("10000\n")
 
         energy_readings, time_readings = [], []
         for i in range(warmup + n):
