@@ -1,5 +1,6 @@
 from compiler_gym.spaces import Reward
 from typing import List
+import logging
 import compiler_gym
 
 # imma try to base this off compiler_gym/spaces/runtime_reward.py
@@ -53,6 +54,7 @@ class EnergyReward(Reward):
         energy = self.compute_energy(inst_counts)
         
         reward = 100*(self.prev_energy - energy) / (self.prev_energy + 1e-8)
+        logging.debug(f"reward: {reward}")
         self.prev_energy = energy
         
         return reward

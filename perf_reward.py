@@ -73,6 +73,7 @@ class PerfReward(Reward):
         energy = self.run_perf(bc)
         
         reward = 100*(self.prev_energy - energy) / (self.prev_energy + 1e-8)
+        logging.debug(f"perf reward: {reward}")
         self.prev_energy = energy
         
         return reward

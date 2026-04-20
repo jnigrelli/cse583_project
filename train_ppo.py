@@ -87,10 +87,11 @@ def train(total_timesteps: int = 20_000, algo: str = "ppo"):
 def main():
     print(f"=== Training PPO on {BENCHMARK} ===\n")
     print("=== Phase 1: Energy reward training ===\n")
-    model = train(total_timesteps=50_000, algo="ppo")
-    #model.save(MODEL_SAVE_PATH)
-    #print(f"\nModel saved to {MODEL_SAVE_PATH}.zip")
+    model = train(total_timesteps=10_000, algo="ppo")
+    model.save(MODEL_SAVE_PATH)
+    print(f"\nModel saved to {MODEL_SAVE_PATH}.zip")
 
+    '''
     print("\n=== Phase 2: Perf fine-tuning ===\n")
     perf_env = DummyVecEnv([make_perf_env])
     model.set_env(perf_env)
@@ -100,6 +101,7 @@ def main():
     perf_env.close()
     model.save(MODEL_SAVE_PATH)
     print(f"Fine-tuned model saved to {MODEL_SAVE_PATH}.zip")
+    '''
 
 
 if __name__ == "__main__":
